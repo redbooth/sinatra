@@ -1,8 +1,6 @@
-begin
-  require 'rack/show_exceptions'
-rescue LoadError
-  require 'rack/showexceptions'
-end
+# frozen_string_literal: true
+
+require 'rack/show_exceptions'
 
 module Sinatra
   # Sinatra::ShowExceptions catches all exceptions raised from the app it
@@ -17,8 +15,7 @@ module Sinatra
     def @@eats_errors.puts(*) end
 
     def initialize(app)
-      @app      = app
-      @template = ERB.new(TEMPLATE)
+      @app = app
     end
 
     def call(env)
@@ -28,47 +25,86 @@ module Sinatra
 
       if prefers_plain_text?(env)
         content_type = "text/plain"
-        exception = dump_exception(e)
+        body = dump_exception(e)
       else
         content_type = "text/html"
-        exception = pretty(env, e)
+        body = pretty(env, e)
       end
 
       env["rack.errors"] = errors
-
-      # Post 893a2c50 in rack/rack, the #pretty method above, implemented in
-      # Rack::ShowExceptions, returns a String instead of an array.
-      body = Array(exception)
 
       [
         500,
         {
           "Content-Type" => content_type,
-          "Content-Length" => Rack::Utils.bytesize(body.join).to_s
+          "Content-Length" => body.bytesize.to_s
         },
-        body
+        [body]
       ]
+    end
+
+    # Pulled from Rack::ShowExceptions in order to override TEMPLATE.
+    # If Rack provides another way to override, this could be removed
+    # in the future.
+    def pretty(env, exception)
+      req = Rack::Request.new(env)
+
+      # This double assignment is to prevent an "unused variable" warning on
+      # Ruby 1.9.3.  Yes, it is dumb, but I don't like Ruby yelling at me.
+      path = path = (req.script_name + req.path_info).squeeze("/")
+
+      # This double assignment is to prevent an "unused variable" warning on
+      # Ruby 1.9.3.  Yes, it is dumb, but I don't like Ruby yelling at me.
+      frames = frames = exception.backtrace.map { |line|
+        frame = OpenStruct.new
+        if line =~ /(.*?):(\d+)(:in `(.*)')?/
+          frame.filename = $1
+          frame.lineno = $2.to_i
+          frame.function = $4
+
+          begin
+            lineno = frame.lineno-1
+            lines = ::File.readlines(frame.filename)
+            frame.pre_context_lineno = [lineno-CONTEXT, 0].max
+            frame.pre_context = lines[frame.pre_context_lineno...lineno]
+            frame.context_line = lines[lineno].chomp
+            frame.post_context_lineno = [lineno+CONTEXT, lines.size].min
+            frame.post_context = lines[lineno+1..frame.post_context_lineno]
+          rescue
+          end
+
+          frame
+        else
+          nil
+        end
+      }.compact
+
+      TEMPLATE.result(binding)
     end
 
     private
 
+    def bad_request?(e)
+      Sinatra::BadRequest === e
+    end
+
     def prefers_plain_text?(env)
       !(Request.new(env).preferred_type("text/plain","text/html") == "text/html") &&
-      [/curl/].index{|item| item =~ env["HTTP_USER_AGENT"]}
+      [/curl/].index { |item| item =~ env["HTTP_USER_AGENT"] }
     end
 
     def frame_class(frame)
-      if frame.filename =~ /lib\/sinatra.*\.rb/
+      if frame.filename =~ %r{lib/sinatra.*\.rb}
         "framework"
       elsif (defined?(Gem) && frame.filename.include?(Gem.dir)) ||
-            frame.filename =~ /\/bin\/(\w+)$/
+            frame.filename =~ %r{/bin/(\w+)\z}
         "system"
       else
         "app"
       end
     end
 
-TEMPLATE = <<-HTML # :nodoc:
+TEMPLATE = ERB.new <<-HTML # :nodoc:
 <!DOCTYPE html>
 <html>
 <head>
@@ -213,8 +249,10 @@ TEMPLATE = <<-HTML # :nodoc:
       <p><a href="#" id="expando"
             onclick="toggleBacktrace(); return false">(expand)</a></p>
       <p id="nav"><strong>JUMP TO:</strong>
-         <a href="#get-info">GET</a>
-         <a href="#post-info">POST</a>
+         <% unless bad_request?(exception) %>
+            <a href="#get-info">GET</a>
+            <a href="#post-info">POST</a>
+         <% end %>
          <a href="#cookie-info">COOKIES</a>
          <a href="#env-info">ENV</a>
       </p>
@@ -267,47 +305,49 @@ TEMPLATE = <<-HTML # :nodoc:
       </ul>
     </div> <!-- /BACKTRACE -->
 
-    <div id="get">
-      <h3 id="get-info">GET</h3>
-      <% if req.GET and not req.GET.empty? %>
-        <table class="req">
-          <tr>
-            <th>Variable</th>
-            <th>Value</th>
-          </tr>
-           <% req.GET.sort_by { |k, v| k.to_s }.each { |key, val| %>
-          <tr>
-            <td><%=h key %></td>
-            <td class="code"><div><%=h val.inspect %></div></td>
-          </tr>
-          <% } %>
-        </table>
-      <% else %>
-        <p class="no-data">No GET data.</p>
-      <% end %>
-      <div class="clear"></div>
-    </div> <!-- /GET -->
+    <% unless bad_request?(exception) %>
+      <div id="get">
+        <h3 id="get-info">GET</h3>
+        <% if req.GET and not req.GET.empty? %>
+          <table class="req">
+            <tr>
+              <th>Variable</th>
+              <th>Value</th>
+            </tr>
+             <% req.GET.sort_by { |k, v| k.to_s }.each { |key, val| %>
+            <tr>
+              <td><%=h key %></td>
+              <td class="code"><div><%=h val.inspect %></div></td>
+            </tr>
+            <% } %>
+          </table>
+        <% else %>
+          <p class="no-data">No GET data.</p>
+        <% end %>
+        <div class="clear"></div>
+      </div> <!-- /GET -->
 
-    <div id="post">
-      <h3 id="post-info">POST</h3>
-      <% if req.POST and not req.POST.empty? %>
-        <table class="req">
-          <tr>
-            <th>Variable</th>
-            <th>Value</th>
-          </tr>
-          <% req.POST.sort_by { |k, v| k.to_s }.each { |key, val| %>
-          <tr>
-            <td><%=h key %></td>
-            <td class="code"><div><%=h val.inspect %></div></td>
-          </tr>
-          <% } %>
-        </table>
-      <% else %>
-        <p class="no-data">No POST data.</p>
-      <% end %>
-      <div class="clear"></div>
-    </div> <!-- /POST -->
+      <div id="post">
+        <h3 id="post-info">POST</h3>
+        <% if req.POST and not req.POST.empty? %>
+          <table class="req">
+            <tr>
+              <th>Variable</th>
+              <th>Value</th>
+            </tr>
+            <% req.POST.sort_by { |k, v| k.to_s }.each { |key, val| %>
+            <tr>
+              <td><%=h key %></td>
+              <td class="code"><div><%=h val.inspect %></div></td>
+            </tr>
+            <% } %>
+          </table>
+        <% else %>
+          <p class="no-data">No POST data.</p>
+        <% end %>
+        <div class="clear"></div>
+      </div> <!-- /POST -->
+    <% end %>
 
     <div id="cookies">
       <h3 id="cookie-info">COOKIES</h3>

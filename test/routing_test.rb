@@ -6,19 +6,13 @@ def route_def(pattern)
   mock_app { get(pattern) { } }
 end
 
-class RegexpLookAlike
-  class MatchData
-    def captures
-      ["this", "is", "a", "test"]
-    end
+class PatternLookAlike
+  def to_pattern(*)
+    self
   end
 
-  def match(string)
-    ::RegexpLookAlike::MatchData.new if string == "/this/is/a/test/"
-  end
-
-  def keys
-    ["one", "two", "three", "four"]
+  def params(input)
+    { "one" => "this", "two" => "is", "three" => "a", "four" => "test" }
   end
 end
 
@@ -53,6 +47,16 @@ class RoutingTest < Minitest::Test
     assert_equal '', response.body
   end
 
+  it "400s when request params contain conflicting types" do
+    mock_app {
+      get('/foo') { }
+    }
+
+    request = Rack::MockRequest.new(@app)
+    response = request.request('GET', '/foo?bar=&bar[]=', {})
+    assert response.bad_request?
+  end
+
   it "404s when no route satisfies the request" do
     mock_app {
       get('/foo') { }
@@ -77,7 +81,7 @@ class RoutingTest < Minitest::Test
     }
     get '/bar'
     assert_equal 404, status
-    assert_equal nil, response.headers['X-Cascade']
+    assert_nil response.headers['X-Cascade']
   end
 
 
@@ -101,11 +105,11 @@ class RoutingTest < Minitest::Test
 
   it "it handles encoded colons correctly" do
     mock_app {
-      get("/:") { 'a' }
-      get("/a/:") { 'b' }
-      get("/a/:/b") { 'c' }
-      get("/a/b:") { 'd' }
-      get("/a/b: ") { 'e' }
+      get("/\\:") { 'a' }
+      get("/a/\\:") { 'b' }
+      get("/a/\\:/b") { 'c' }
+      get("/a/b\\:") { 'd' }
+      get("/a/b\\: ") { 'e' }
     }
     get '/:'
     assert_equal 200, status
@@ -171,6 +175,77 @@ class RoutingTest < Minitest::Test
     assert_equal 404, status
   end
 
+  it "captures the exception message of a raised NotFound" do
+    mock_app {
+      get '/' do
+        raise Sinatra::NotFound, "This is not a drill"
+      end
+    }
+
+    get "/"
+    assert_equal "19", response["Content-Length"]
+    assert_equal 404, status
+    assert_equal "This is not a drill", response.body
+  end
+
+  it "captures the exception message of a raised BadRequest" do
+    mock_app {
+      get '/' do
+        raise Sinatra::BadRequest, "This is not a drill either"
+      end
+    }
+
+    get "/"
+    assert_equal "26", response["Content-Length"]
+    assert_equal 400, status
+    assert_equal "This is not a drill either", response.body
+  end
+
+  it "captures the custom exception message of a BadRequest" do
+    mock_app {
+      get('/') {}
+
+      error Sinatra::BadRequest do
+        'This is not a drill either'
+      end
+    }
+
+    get "/", "foo" => "", "foo[]" => ""
+    assert_equal "26", response["Content-Length"]
+    assert_equal 400, status
+    assert_equal "This is not a drill either", response.body
+  end
+
+  it "returns empty when unmatched with any regex captures" do
+    mock_app do
+      before do
+        # noop
+      end
+
+      get '/hello' do
+        params.to_s
+      end
+    end
+
+    assert get('/hello').ok?
+    assert_body '{}'
+  end
+
+  it "uses 404 error handler for not matching route" do
+    mock_app {
+      not_found do
+        "nf"
+      end
+      error 404 do
+        "e"
+      end
+    }
+
+    get "/"
+    assert_equal "e", body
+    assert_equal 404, status
+  end
+
   it 'matches empty PATH_INFO to "/" if no route is defined for ""' do
     mock_app do
       get '/' do
@@ -226,12 +301,25 @@ class RoutingTest < Minitest::Test
     mock_app {
       get '/:foo' do
         assert_equal 'bar', params['foo']
+        assert params.has_key?('foo')
         assert_equal 'bar', params[:foo]
+        assert params.has_key?(:foo)
         'well, alright'
       end
     }
     get '/bar'
     assert_equal 'well, alright', body
+  end
+
+  it "handles params without a value" do
+    mock_app {
+      get '/' do
+        assert_nil params.fetch('foo')
+        "Given: #{params.keys.sort.join(',')}"
+      end
+    }
+    get '/?foo'
+    assert_equal 'Given: foo', body
   end
 
   it "merges named params and query string params in params" do
@@ -275,8 +363,20 @@ class RoutingTest < Minitest::Test
     assert_equal "foo=;bar=", body
   end
 
-  it "supports named captures like %r{/hello/(?<person>[^/?#]+)} on Ruby >= 1.9" do
-    next if RUBY_VERSION < '1.9'
+  it "uses the default encoding for named params" do
+    mock_app {
+      set :default_encoding ,'ISO-8859-1'
+
+      get '/:foo/:bar' do
+        "foo=#{params[:foo].encoding};bar=#{params[:bar].encoding}"
+      end
+    }
+    get '/f%C3%B6%C3%B6/b%C3%B6%C3%B6'
+    assert ok?
+    assert_equal 'foo=ISO-8859-1;bar=ISO-8859-1', body
+  end
+
+  it "supports named captures like %r{/hello/(?<person>[^/?#]+)}" do
     mock_app {
       get Regexp.new('/hello/(?<person>[^/?#]+)') do
         "Hello #{params['person']}"
@@ -286,8 +386,7 @@ class RoutingTest < Minitest::Test
     assert_equal 'Hello Frank', body
   end
 
-  it "supports optional named captures like %r{/page(?<format>.[^/?#]+)?} on Ruby >= 1.9" do
-    next if RUBY_VERSION < '1.9'
+  it "supports optional named captures like %r{/page(?<format>.[^/?#]+)?}" do
     mock_app {
       get Regexp.new('/page(?<format>.[^/?#]+)?') do
         "format=#{params[:format]}"
@@ -305,6 +404,19 @@ class RoutingTest < Minitest::Test
     get '/page'
     assert ok?
     assert_equal "format=", body
+  end
+
+  it 'uses the default encoding for named captures' do
+    mock_app {
+      set :default_encoding ,'ISO-8859-1'
+
+      get Regexp.new('/page(?<format>.[^/?#]+)?') do
+        "format=#{params[:format].encoding};captures=#{params[:captures][0].encoding}"
+      end
+    }
+    get '/page.f%C3%B6'
+    assert ok?
+    assert_equal 'format=ISO-8859-1;captures=ISO-8859-1', body
   end
 
   it 'does not concatenate params with the same name' do
@@ -417,8 +529,8 @@ class RoutingTest < Minitest::Test
     assert_equal 'bob+ross', body
   end
 
-  it "literally matches parens in paths" do
-    route_def '/test(bar)/'
+  it "literally matches parens in paths when escaped" do
+    route_def '/test\(bar\)/'
 
     get '/test(bar)/'
     assert ok?
@@ -559,9 +671,23 @@ class RoutingTest < Minitest::Test
     assert ok?
   end
 
+  it 'unescapes named parameters and splats' do
+    mock_app {
+      get '/:foo/*' do |a, b|
+        assert_equal "foo\xE2\x80\x8Cbar", params['foo']
+        assert_predicate params['foo'], :valid_encoding?
+
+        assert_equal ["bar\xE2\x80\x8Cbaz"], params['splat']
+      end
+    }
+
+    get '/foo%e2%80%8cbar/bar%e2%80%8cbaz'
+    assert ok?
+  end
+
   it 'supports regular expressions' do
     mock_app {
-      get(/^\/foo...\/bar$/) do
+      get(/\/foo...\/bar/) do
         'Hello World'
       end
     }
@@ -571,9 +697,22 @@ class RoutingTest < Minitest::Test
     assert_equal 'Hello World', body
   end
 
+  it 'unescapes regular expression captures' do
+    mock_app {
+      get(/\/foo\/(.+)/) do |path|
+        path
+      end
+    }
+
+    get '/foo/bar%e2%80%8cbaz'
+    assert ok?
+    assert_equal "bar\xE2\x80\x8Cbaz", body
+    assert_predicate body, :valid_encoding?
+  end
+
   it 'makes regular expression captures available in params[:captures]' do
     mock_app {
-      get(/^\/fo(.*)\/ba(.*)/) do
+      get(/\/fo(.*)\/ba(.*)/) do
         assert_equal ['orooomma', 'f'], params[:captures]
         'right on'
       end
@@ -584,9 +723,32 @@ class RoutingTest < Minitest::Test
     assert_equal 'right on', body
   end
 
+  it 'makes regular expression captures available in params[:captures] for concatenated routes' do
+    with_regexp = Mustermann.new('/prefix') + Mustermann.new("/fo(.*)/ba(.*)", type: :regexp)
+    without_regexp = Mustermann.new('/prefix', type: :identity) + Mustermann.new('/baz')
+    mock_app {
+      get(with_regexp) do
+        assert_equal ['orooomma', 'f'], params[:captures]
+        'right on'
+      end
+      get(without_regexp) do
+        assert !params.keys.include?(:captures)
+        'no captures here'
+      end
+    }
+
+    get '/prefix/foorooomma/baf'
+    assert ok?
+    assert_equal 'right on', body
+
+    get '/prefix/baz'
+    assert ok?
+    assert_equal 'no captures here', body
+  end
+
   it 'supports regular expression look-alike routes' do
     mock_app {
-      get(RegexpLookAlike.new) do
+      get(PatternLookAlike.new) do
         assert_equal 'this', params[:one]
         assert_equal 'is', params[:two]
         assert_equal 'a', params[:three]
@@ -670,6 +832,23 @@ class RoutingTest < Minitest::Test
     get '/bar'
     assert ok?
     assert_equal 'Hello World', body
+  end
+
+  it "makes original request params available in error handler" do
+    mock_app {
+      disable :raise_errors
+
+      get '/:foo' do
+        raise ArgumentError, "foo"
+      end
+
+      error do
+        "Hello #{params['foo']}2"
+      end
+    }
+
+    get '/bar'
+    assert_equal 'Hello bar2', body
   end
 
   it "transitions to 404 when passed and no subsequent route matches" do
@@ -1194,7 +1373,7 @@ class RoutingTest < Minitest::Test
 
   it 'passes regular expression captures as block parameters' do
     mock_app {
-      get(/^\/fo(.*)\/ba(.*)/) do |foo, bar|
+      get(/\/fo(.*)\/ba(.*)/) do |foo, bar|
         assert_equal 'orooomma', foo
         assert_equal 'f', bar
         'looks good'
@@ -1219,6 +1398,19 @@ class RoutingTest < Minitest::Test
     get '/bar/foo/bling/baz/boom'
     assert ok?
     assert_equal 'looks good', body
+  end
+
+  it "uses the default encoding for block parameters" do
+    mock_app {
+      set :default_encoding ,'ISO-8859-1'
+
+      get '/:foo/:bar' do |foo, bar|
+        "foo=#{foo.encoding};bar=#{bar.encoding}"
+      end
+    }
+    get '/f%C3%B6%C3%B6/b%C3%B6%C3%B6'
+    assert ok?
+    assert_equal 'foo=ISO-8859-1;bar=ISO-8859-1', body
   end
 
   it 'raises an ArgumentError with block arity > 1 and too many values' do
@@ -1299,59 +1491,24 @@ class RoutingTest < Minitest::Test
     assert_equal "hey", body
   end
 
-  # NOTE Block params behaves differently under 1.8 and 1.9. Under 1.8, block
-  # param arity is lax: declaring a mismatched number of block params results
-  # in a warning. Under 1.9, block param arity is strict: mismatched block
-  # arity raises an ArgumentError.
+  it 'raises an ArgumentError with block param arity 1 and no values' do
+    mock_app {
+      get '/foo' do |foo|
+        'quux'
+      end
+    }
 
-  if RUBY_VERSION >= '1.9'
+    assert_raises(ArgumentError) { get '/foo' }
+  end
 
-    it 'raises an ArgumentError with block param arity 1 and no values' do
-      mock_app {
-        get '/foo' do |foo|
-          'quux'
-        end
-      }
+  it 'raises an ArgumentError with block param arity 1 and too many values' do
+    mock_app {
+      get '/:foo/:bar/:baz' do |foo|
+        'quux'
+      end
+    }
 
-      assert_raises(ArgumentError) { get '/foo' }
-    end
-
-    it 'raises an ArgumentError with block param arity 1 and too many values' do
-      mock_app {
-        get '/:foo/:bar/:baz' do |foo|
-          'quux'
-        end
-      }
-
-      assert_raises(ArgumentError) { get '/a/b/c' }
-    end
-
-  else
-
-    it 'does not raise an ArgumentError with block param arity 1 and no values' do
-      mock_app {
-        get '/foo' do |foo|
-          'quux'
-        end
-      }
-
-      silence_warnings { get '/foo' }
-      assert ok?
-      assert_equal 'quux', body
-    end
-
-    it 'does not raise an ArgumentError with block param arity 1 and too many values' do
-      mock_app {
-        get '/:foo/:bar/:baz' do |foo|
-          'quux'
-        end
-      }
-
-      silence_warnings { get '/a/b/c' }
-      assert ok?
-      assert_equal 'quux', body
-    end
-
+    assert_raises(ArgumentError) { get '/a/b/c' }
   end
 
   it "matches routes defined in superclasses" do
@@ -1440,7 +1597,7 @@ class RoutingTest < Minitest::Test
     end
 
     assert_equal Array, signature.class
-    assert_equal 4, signature.length
+    assert_equal 3, signature.length
     assert list.include?(signature)
   end
 
@@ -1452,5 +1609,40 @@ class RoutingTest < Minitest::Test
       get('/users/:id/status') { 'ok' }
     end
     get '/users/1/status'
+  end
+
+  it 'treats routes with and without trailing slashes differently' do
+    mock_app do
+      get '/foo' do
+        'Foo'
+      end
+
+      get '/foo/' do
+        'Foo with a slash'
+      end
+    end
+
+    get '/foo'
+    assert_equal 'Foo', body
+    refute_equal 'Foo with a slash', body
+
+    get '/foo/'
+    assert_equal 'Foo with a slash', body
+  end
+
+  it 'does not treat routes with and without trailing slashes differently if :strict_paths is disabled' do
+    mock_app do
+      disable :strict_paths
+
+      get '/foo' do
+        'foo'
+      end
+    end
+
+    get '/foo'
+    assert_equal 'foo', body
+
+    get '/foo/'
+    assert_equal 'foo', body
   end
 end

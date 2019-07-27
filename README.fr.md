@@ -209,7 +209,7 @@ end
 Une route peut aussi être définie par une expression régulière :
 
 ```ruby
-get /\A\/bonjour\/([\w]+)\z/ do
+get /\/bonjour\/([\w]+)/ do
   "Bonjour, #{params['captures'].first} !"
 end
 ```
@@ -324,13 +324,13 @@ acceptées.
 Vous pouvez renvoyer n'importe quel objet qu'il s'agisse d'une réponse Rack
 valide, d'un corps de réponse Rack ou d'un code statut HTTP :
 
-* Un tableau de 3 éléments : `[code statut (Fixnum), en-têtes (Hash), corps
+* Un tableau de 3 éléments : `[code statut (Integer), en-têtes (Hash), corps
   de la réponse (répondant à #each)]`
-* Un tableau de 2 élements : `[code statut (Fixnum), corps de la réponse
+* Un tableau de 2 élements : `[code statut (Integer), corps de la réponse
   (répondant à #each)]`
 * Un objet qui répond à `#each` et qui ne transmet que des chaînes de
   caractères au bloc fourni
-* Un Fixnum représentant le code statut
+* Un Integer représentant le code statut
 
 Ainsi, on peut facilement implémenter un exemple de streaming :
 
@@ -390,7 +390,7 @@ end
 Ou bien en utilisant cette expression regulière :
 
 ```ruby
-get %r{^(?!/index$)} do
+get %r{(?!/index)} do
   # ...
 end
 ```
@@ -691,7 +691,7 @@ exemple).
 <table>
   <tr>
     <td>Dépendances</td>
-    <td><a href="http://liquidmarkup.org/" title="liquid">liquid</a></td>
+    <td><a href="https://shopify.github.io/liquid/" title="liquid">liquid</a></td>
   </tr>
   <tr>
     <td>Extensions de fichier</td>
@@ -716,7 +716,7 @@ locales.
       Au choix :
       <a href="https://github.com/davidfstr/rdiscount" title="RDiscount">RDiscount</a>,
       <a href="https://github.com/vmg/redcarpet" title="RedCarpet">RedCarpet</a>,
-      <a href="http://deveiate.org/projects/BlueCloth" title="BlueCloth">BlueCloth</a>,
+      <a href="https://github.com/ged/bluecloth" title="bluecloth">BlueCloth</a>,
       <a href="http://kramdown.gettalong.org/" title="kramdown">kramdown</a>,
       <a href="https://github.com/bhollis/maruku" title="maruku">maruku</a>
     </td>
@@ -2016,7 +2016,7 @@ configure do
 end
 ```
 
-Lancé si l'environnement (variable d'environnement RACK_ENV) est `:production` :
+Lancé si l'environnement (variable d'environnement APP_ENV) est `:production` :
 
 ```ruby
   configure :production do
@@ -2048,7 +2048,7 @@ end
 
 ### Se protéger des attaques
 
-Sinatra utilise [Rack::Protection](https://github.com/sinatra/rack-protection#readme)
+Sinatra utilise [Rack::Protection](https://github.com/sinatra/sinatra/tree/master/rack-protection#readme)
 pour protéger votre application contre les principales attaques opportunistes.
 Vous pouvez très simplement désactiver cette fonctionnalité (ce qui exposera
 votre application à beaucoup de vulnerabilités courantes) :
@@ -2121,7 +2121,7 @@ set :protection, :session => true
   </dd>
 
   <dt>environment</dt>
-  <dd>environnement courant, par défaut <tt>ENV['RACK_ENV']</tt>, ou
+  <dd>environnement courant, par défaut <tt>ENV['APP_ENV']</tt>, ou
   <tt>"development"</tt> si absent.</dd>
 
   <dt>logging</dt>
@@ -2229,7 +2229,7 @@ set :protection, :session => true
 
 Il existe trois environnements prédéfinis : `"development"`,
 `"production"` et `"test"`. Les environements peuvent être
-sélectionné via la variable d'environnement `RACK_ENV`. Sa valeur par défaut
+sélectionné via la variable d'environnement `APP_ENV`. Sa valeur par défaut
 est `"development"`. Dans ce mode, tous les templates sont rechargés à
 chaque requête. Des handlers spécifiques pour `not_found` et
 `error` sont installés pour vous permettre d'avoir une pile de trace
@@ -2237,10 +2237,10 @@ dans votre navigateur. En mode `"production"` et `"test"` les
 templates sont mis en cache par défaut.
 
 Pour exécuter votre application dans un environnement différent, définissez la
-variable d'environnement `RACK_ENV` :
+variable d'environnement `APP_ENV` :
 
-```shell
-RACK_ENV=production ruby my_app.rb
+``` shell
+APP_ENV=production ruby my_app.rb
 ```
 
 Vous pouvez utiliser une des méthodes `development?`, `test?` et `production?`
@@ -2405,7 +2405,7 @@ class MonTest < Minitest::Test
     assert_equal 'Salut Frank !', last_response.body
   end
 
-  def test_avec_rack_env
+  def test_avec_agent
     get '/', {}, 'HTTP_USER_AGENT' => 'Songbird'
     assert_equal "Vous utilisez Songbird !", last_response.body
   end

@@ -100,6 +100,28 @@ class TemplatesTest < Minitest::Test
     assert_equal 'Hello World', body
   end
 
+  it 'allows to specify path/line when rendering with String' do
+    path = 'example.txt'
+    line = 228
+    begin render_app {
+      render :erb, '<%= doesnotexist %>', {:path => path, :line => line}
+    }
+    rescue NameError => e
+      assert_match(/#{path}:#{line}/, e.backtrace.first)
+    end
+  end
+
+  it 'allows to specify path/line when rendering with Proc' do
+    path = 'example.txt'
+    line = 900
+    begin render_app {
+      render :erb, Proc.new { '<%= doesnotexist %>' }, {:path => path, :line => line}
+    }
+    rescue NameError => e
+      assert_match(/#{path}:#{line}/, e.backtrace.first)
+    end
+  end
+
   it 'renders Proc templates using the call result' do
     render_app { render(:test, Proc.new {'Hello World'}) }
     assert ok?
@@ -255,6 +277,13 @@ class TemplatesTest < Minitest::Test
     render_app(base) { render(:test, :foo) }
     assert ok?
     assert_equal 'bar', body
+  end
+
+  it 'allows setting default content type' do
+    render_app(:str => { :default_content_type => :txt }) {
+      render :str, 'foo'
+    }
+    assert_equal 'text/plain;charset=utf-8', response['Content-Type']
   end
 
   it 'allows setting default content type per template engine' do

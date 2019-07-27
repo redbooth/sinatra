@@ -38,7 +38,7 @@ class RequestTest < Minitest::Test
       'CONTENT_TYPE' => 'application/x-www-form-urlencoded',
       'rack.input' => StringIO.new('foo=bar')
     )
-    Sinatra::Base.new!.send(:indifferent_hash).replace(request.params)
+    Sinatra::IndifferentHash[request.params]
     dumped = Marshal.dump(request.params)
     assert_equal 'bar', Marshal.load(dumped)['foo']
   end
@@ -48,6 +48,11 @@ class RequestTest < Minitest::Test
       'HTTP_ACCEPT' => 'image/jpeg; compress=0.25'
     )
     assert_equal({ 'compress' => '0.25' }, request.preferred_type.params)
+  end
+
+  it "raises Sinatra::BadRequest when params contain conflicting types" do
+    request = Sinatra::Request.new 'QUERY_STRING' => 'foo=&foo[]='
+    assert_raises(Sinatra::BadRequest) { request.params }
   end
 
   it "makes accept types behave like strings" do

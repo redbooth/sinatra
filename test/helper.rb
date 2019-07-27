@@ -1,14 +1,18 @@
-ENV['RACK_ENV'] = 'test'
+if ENV['COVERAGE']
+  require 'simplecov'
+  SimpleCov.start do
+    add_filter '/test/'
+    add_group 'sinatra-contrib', 'sinatra-contrib'
+    add_group 'rack-protection', 'rack-protection'
+  end
+end
+
+ENV['APP_ENV'] = 'test'
 Encoding.default_external = "UTF-8" if defined? Encoding
 
 RUBY_ENGINE = 'ruby' unless defined? RUBY_ENGINE
 
-begin
-  require 'rack'
-rescue LoadError
-  require 'rubygems'
-  require 'rack'
-end
+require 'rack'
 
 testdir = File.dirname(__FILE__)
 $LOAD_PATH.unshift testdir unless $LOAD_PATH.include?(testdir)
@@ -19,6 +23,18 @@ $LOAD_PATH.unshift libdir unless $LOAD_PATH.include?(libdir)
 require 'minitest'
 require 'contest'
 require 'rack/test'
+
+# Some of ActiveSupport's core extensions to Hash get loaded during internal
+# testing (e.g. by RABL and our RABL test) that we have no control over, but we
+# need them to load *before* Sinatra::IndifferentHash (which is itself loaded
+# by Sinatra::Base) whenever the full test suite is executed, so we'll do it
+# preemptively here.
+#
+# Newer Rubies have these methods built-in, so the extensions are no-ops.
+require 'active_support/core_ext/hash/conversions'
+require 'active_support/core_ext/hash/slice'
+require 'active_support/core_ext/hash/keys'
+
 require 'sinatra/base'
 
 class Sinatra::Base
@@ -33,7 +49,7 @@ end
 
 class Rack::Builder
   def include?(middleware)
-    @ins.any? { |m| p m ; middleware === m }
+    @ins.any? { |m| middleware === m }
   end
 end
 

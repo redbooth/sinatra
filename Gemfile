@@ -13,10 +13,10 @@ gemspec
 gem 'rake', '~> 10.0'
 gem 'rack-test', '>= 0.6.2'
 gem "minitest", "~> 5.0"
+gem 'yard'
 
 if RUBY_ENGINE == 'jruby'
   gem 'nokogiri', '!= 1.5.0'
-  gem 'jruby-openssl'
   gem 'trinidad'
 end
 
@@ -72,6 +72,7 @@ if RUBY_ENGINE == "rbx"
   gem 'json'
   gem 'rubysl'
   gem 'rubysl-test-unit'
+  gem 'erubi'
 end
 
 platforms :ruby_18, :jruby do

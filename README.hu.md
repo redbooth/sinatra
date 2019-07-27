@@ -88,7 +88,7 @@ Az útvonalmintákban szerepelhetnek joker paraméterek is, melyeket a
 Reguláris kifejezéseket is felvehetünk az útvonalba:
 
 ```ruby
-  get /\A\/hello\/([\w]+)\z/ do
+  get /\/hello\/([\w]+)/ do
     "Helló, #{params['captures'].first}!"
   end
 ```
@@ -411,7 +411,7 @@ Csak indításkor, de minden környezetre érvényesen fusson le:
   end
 ```
 
-Csak akkor fusson le, ha a környezet (a RACK_ENV környezeti változóban)
+Csak akkor fusson le, ha a környezet (a APP_ENV környezeti változóban)
 `:production`-ra van állítva:
 
 ```ruby
@@ -562,7 +562,7 @@ könyvtárat ajánljuk:
       assert_equal 'Helló Frici!', last_response.body
     end
 
-    def test_with_rack_env
+    def test_with_user_agent
       get '/', {}, 'HTTP_USER_AGENT' => 'Songbird'
       assert_equal "Songbird-öt használsz!", last_response.body
     end
@@ -648,6 +648,40 @@ Az alábbi kapcsolókat ismeri fel a rendszer:
   -e # a környezet beállítása (alapértelmezés szerint ez a development)
   -s # a rack szerver/handler beállítása (alapértelmezetten ez a thin)
   -x # a mutex lock bekapcsolása (alapértelmezetten ki van kapcsolva)
+
+## Több szálon futtatás
+
+_Parafrázis [Konstantin StackOverflow válasza][so-answer] alapján_
+
+A Sinatra nem szabja meg az konkurenciakezelés módját, hanem az alatta működő
+Rack kezelőre (szerverre) hagyja ezt a feladatot, ami például a Thin, a Puma,
+vagy a WEBrick. A Sinatra önmagában szálbiztos, tehát semmilyen probléma sem
+adódik, ha a Rack kezelő többszálú konkurenciamodellt használ. Ezek szerint
+szerverindításkor meg kell adni a Rack szervernek megfelelő indítási módot.
+A következő példa egy többszálú Thin szerver indítását mutatja be.
+
+```ruby
+# app.rb
+
+require 'sinatra/base'
+
+class App < Sinatra::Base
+  get '/' do
+    "Hello, World"
+  end
+end
+
+App.run!
+
+```
+
+A szerverindítás parancsa a következő lenne:
+
+``` shell
+thin --threaded start
+```
+
+[so-answer]: http://stackoverflow.com/a/6282999/1725341
 
 ## Fejlesztői változat
 

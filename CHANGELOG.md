@@ -1,5 +1,4 @@
 = 1.4.7 / 2016-01-24
-
  * Add Ashley Williams, Trevor Bramble, and Kashyap Kondamudi to team Sinatra.
 
  * Correctly handle encoded colons in routes. (Jeremy Evans)
@@ -14,7 +13,17 @@
  * Add CONTRIBUTING guide. #987 (Katrina Owen)
 
 
-= 1.4.6 / 2015-03-23
+ * Rename CHANGES to CHANGELOG.md and update Rakefile. [#1043](https://github.com/sinatra/sinatra/issues/1043) (Eliza Sorensen)
+
+ * Improve documentation. [#941](https://github.com/sinatra/sinatra/issues/941), [#1069](https://github.com/sinatra/sinatra/issues/1069), [#1075](https://github.com/sinatra/sinatra/issues/1075), [#1025](https://github.com/sinatra/sinatra/issues/1025), [#1052](https://github.com/sinatra/sinatra/issues/1052) (Many great folks)
+
+ * Introduce `Sinatra::Ext` to workaround Rack 1.6 bug to fix Ruby 1.8.7
+   support. [#1080](https://github.com/sinatra/sinatra/issues/1080) (Zachary Scott)
+
+ * Add CONTRIBUTING guide. [#987](https://github.com/sinatra/sinatra/issues/987) (Katrina Owen)
+
+
+## 1.4.6 / 2015-03-23
 
  * Improve tests and documentation. (Darío Hereñú, Seiichi Yonezawa, kyoendo,
    John Voloski, Ferenc-, Renaud Martinet, Christian Haase, marocchino,
@@ -44,7 +53,7 @@
  * Upgrade test suite to Minitest version 5 and fix Ruby 2.2 compatibility.
    (Vipul A M)
 
-= 1.4.5 / 2014-04-08
+## 1.4.5 / 2014-04-08
 
  * Improve tests and documentation. (Seiichi Yonezawa, Mike Gehard, Andrew
    Deitrick, Matthew Nicholas Bradley, GoGo tanaka, Carlos Lazo, Shim Tw,
@@ -61,7 +70,7 @@
 
  * Fix bug in request.accept? that might trigger a NoMethodError. (sbonami)
 
-= 1.4.4 / 2013-10-21
+## 1.4.4 / 2013-10-21
 
  * Allow setting layout to false specifically for a single rendering engine.
    (Matt Wildig)
@@ -96,7 +105,7 @@
 
  * Reduce file size of dev mode images for 404 and 500 pages. (Francis Go)
 
-= 1.4.3 / 2013-06-07
+## 1.4.3 / 2013-06-07
 
  * Running a Sinatra file directly or via `run!` it will now ignore an
    empty $PORT env variable. (noxqsgit)
@@ -117,7 +126,7 @@
 
  * Request#accept? now returns true instead of a truthy value. (Alan Harris)
 
-= 1.4.2 / 2013-03-21
+## 1.4.2 / 2013-03-21
 
  * Fix parsing error for case where both the pattern and the captured part
    contain a dot. (Florian Hanke, Konstantin Haase)
@@ -126,11 +135,11 @@
 
  * Improve documentation. (Patricio Mac Adden, Joe Bottigliero)
 
-= 1.4.1 / 2013-03-15
+## 1.4.1 / 2013-03-15
 
  * Make delegated methods available in config.ru (Konstantin Haase)
 
-= 1.4.0 / 2013-03-15
+## 1.4.0 / 2013-03-15
 
  * Add support for LINK and UNLINK requests. (Konstantin Haase)
 
@@ -164,9 +173,9 @@
    halt in a before filter or route. (Konstantin Haase)
 
  * Sinatra::Base.new now returns a Sinatra::Wrapper instance, exposing
-   #settings and #helpers, yet going through the middleware stack on #call.
-   It also implements a nice #inspect, so it plays nice with Rails' `rake
-   routes`. (Konstantin Haase)
+   `#settings` and `#helpers`, yet going through the middleware stack on
+   `#call`.  It also implements a nice `#inspect`, so it plays nice with
+   Rails' `rake routes`. (Konstantin Haase)
 
  * In addition to WebRick, Thin and Mongrel, Sinatra will now automatically pick
    up Puma, Trinidad, ControlTower or Net::HTTP::Server when installed. The
@@ -251,7 +260,7 @@
  * Exceptions in `after` filter are now handled like any other exception.
    (Nathan Esquenazi)
 
-= 1.3.6 (backport release) / 2013-03-15
+## 1.3.6 (backport release) / 2013-03-15
 
 Backported from 1.4.0:
 
@@ -261,7 +270,7 @@ Backported from 1.4.0:
 
  * No longer override `define_singleton_method`. (Konstantin Haase)
 
-= 1.3.5 / 2013-02-25
+## 1.3.5 / 2013-02-25
 
  * Fix for RubyGems 2.0 (Uchio KONDO)
 
@@ -269,7 +278,7 @@ Backported from 1.4.0:
 
  * No longer override `define_singleton_method`. (Konstantin Haase)
 
-= 1.3.4 / 2013-01-26
+## 1.3.4 / 2013-01-26
 
  * Improve documentation. (Kashyap, Stanislav Chistenko, Konstantin Haase,
    ymmtmsys, Anurag Priyam)
@@ -286,7 +295,7 @@ Backported from 1.4.0:
  * Status, headers and body will be set correctly in an after filter when using
    halt in a before filter or route. (Konstantin Haase)
 
-= 1.3.3 / 2012-08-19
+## 1.3.3 / 2012-08-19
 
  * Improved documentation. (burningTyger, Konstantin Haase, Gabriel Andretta,
    Anurag Priyam, michelc)
@@ -313,7 +322,7 @@ Backported from 1.4.0:
  * When protecting against CSRF attacks, drop the session instead of refusing
    the request. (Konstantin Haase)
 
-= 1.3.2 / 2011-12-30
+## 1.3.2 / 2011-12-30
 
  * Don't automatically add `Rack::CommonLogger` if `Rack::Server` is adding it,
    too. (Konstantin Haase)
@@ -340,7 +349,7 @@ Backported from 1.4.0:
 
  * Improved MagLev support. (Tim Felgentreff)
 
-= 1.3.1 / 2011-10-05
+## 1.3.1 / 2011-10-05
 
  * Support adding more than one callback to the stream object. (Konstantin
    Haase)
@@ -348,7 +357,7 @@ Backported from 1.4.0:
  * Fix for infinite loop when streaming on 1.9.2 with Thin from a modular
    application (Konstantin Haase)
 
-= 1.3.0 / 2011-09-30
+## 1.3.0 / 2011-09-30
 
  * Added `stream` helper method for easily creating streaming APIs, Server
    Sent Events or even WebSockets. See README for more on that topic.
@@ -475,7 +484,7 @@ Backported from 1.4.0:
  * Fix handling of broken query params when displaying exceptions. (Luke
    Jahnke)
 
-= 1.2.9 (backports release) / 2013-03-15
+## 1.2.9 (backports release) / 2013-03-15
 
 IMPORTANT: THIS IS THE LAST 1.2.x RELEASE, PLEASE UPGRADE.
 
@@ -489,14 +498,14 @@ IMPORTANT: THIS IS THE LAST 1.2.x RELEASE, PLEASE UPGRADE.
 
  * Add backports library so we can still run on Ruby 1.8.6. (Konstantin Haase)
 
-= 1.2.8 (backports release) / 2011-12-30
+## 1.2.8 (backports release) / 2011-12-30
 
 Backported from 1.3.2:
 
 * Fix bug where rendering a second template in the same request after the
   first one raised an exception skipped the default layout (Nathan Baum)
 
-= 1.2.7 (backports release) / 2011-09-30
+## 1.2.7 (backports release) / 2011-09-30
 
 Custom changes:
 
@@ -529,16 +538,16 @@ Backported from 1.3.0:
  * Fix handling of broken query params when displaying exceptions. (Luke
    Jahnke)
 
-= 1.2.6 / 2011-05-01
+## 1.2.6 / 2011-05-01
 
  * Fix broken delegation, backport delegation tests from Sinatra 1.3.
    (Konstantin Haase)
 
-= 1.2.5 / 2011-04-30
+## 1.2.5 / 2011-04-30
 
  * Restore compatibility with Ruby 1.8.6. (Konstantin Haase)
 
-= 1.2.4 / 2011-04-30
+## 1.2.4 / 2011-04-30
 
  * Sinatra::Application (classic style) does not use a session secret in
    development mode, so sessions are not invalidated after every request when
@@ -546,9 +555,9 @@ Backported from 1.3.0:
 
  * The request object was shared between multiple Sinatra instances in the
    same middleware chain. This caused issues if any non-sinatra routing
-   happend in-between two of those instances, or running a request twice
+   happened in-between two of those instances, or running a request twice
    against an application (described in the README). The caching was reverted.
-   See GH#239 and GH#256 for more infos. (Konstantin Haase)
+   See GH[#239](https://github.com/sinatra/sinatra/issues/239) and GH[#256](https://github.com/sinatra/sinatra/issues/256) for more infos. (Konstantin Haase)
 
  * Fixes issues where the top level DSL was interfering with method_missing
    proxies. This issue surfaced when Rails 3 was used with older Sass versions
@@ -562,7 +571,7 @@ Backported from 1.3.0:
  * Remove HEAD request logic and let Rack::Head handle it instead. (Paolo
    "Nusco" Perrotta)
 
-= 1.2.3 / 2011-04-13
+## 1.2.3 / 2011-04-13
 
  * This release is compatible with Tilt 1.3, it will still work with Tilt 1.2.2,
    however, if you want to use a newer Tilt version, you have to upgrade to at
@@ -571,7 +580,7 @@ Backported from 1.3.0:
  * Helpers dealing with time, like `expires`, handle objects that pretend to be
    numbers, like `ActiveSupport::Duration`, better. (Konstantin Haase)
 
-= 1.2.2 / 2011-04-08
+## 1.2.2 / 2011-04-08
 
  * The `:provides => :js` condition now matches both `application/javascript`
    and `text/javascript`. The `:provides => :xml` condition now matches both
@@ -599,7 +608,7 @@ Backported from 1.3.0:
  * In development environment, when running under a nested path, the image URIs
    on the error pages are set properly. (Konstantin Haase)
 
-= 1.2.1 / 2011-03-17
+## 1.2.1 / 2011-03-17
 
  * Use a generated session secret when using `enable :sessions`. (Konstantin
    Haase)
@@ -612,7 +621,7 @@ Backported from 1.3.0:
  * README translations improved (Gabriel Andretta, burningTyger, Sylvain Desvé,
    Gregor Schmidt)
 
-= 1.2.0 / 2011-03-03
+## 1.2.0 / 2011-03-03
 
  * Added `slim` rendering method for rendering Slim templates. (Steve
    Hodgkiss)
@@ -661,11 +670,11 @@ Backported from 1.3.0:
  * Sinatra now ships with a Gemfile for development dependencies, since it eases
    supporting different platforms, like JRuby. (Konstantin Haase)
 
-= 1.1.4 (backports release) / 2011-04-13
+## 1.1.4 (backports release) / 2011-04-13
 
  * Compatible with Tilt 1.3. (Konstantin Haase)
 
-= 1.1.3 / 2011-02-20
+## 1.1.3 / 2011-02-20
 
  * Fixed issues with `user_agent` condition if the user agent header is missing.
    (Konstantin Haase)
@@ -684,11 +693,11 @@ Backported from 1.3.0:
    a rendering engine - it was not possible to register ".html.erb" without
    tricks. (Konstantin Haase)
 
-= 1.1.2 / 2010-10-25
+## 1.1.2 / 2010-10-25
 
 Like 1.1.1, but with proper CHANGES file.
 
-= 1.1.1 / 2010-10-25
+## 1.1.1 / 2010-10-25
 
  * README has been translated to Russian (Nickolay Schwarz, Vasily Polovnyov)
    and Portuguese (Luciano Sousa).
@@ -720,7 +729,7 @@ Like 1.1.1, but with proper CHANGES file.
    honor default_encoding and URLs support unicode characters. (Konstantin
    Haase)
 
-= 1.1.0 / 2010-10-24
+## 1.1.0 / 2010-10-24
 
  * Before and after filters now support pattern matching, including the
    ability to use captures: "before('/user/:name') { |name| ... }". This
@@ -826,7 +835,7 @@ Like 1.1.1, but with proper CHANGES file.
  * Sinatra now depends on Rack 1.1 or higher. Rack 1.0 is no longer supported.
    (Konstantin Haase)
 
-= 1.0 / 2010-03-23
+## 1.0 / 2010-03-23
 
  * It's now possible to register blocks to run after each request using
    after filters. After filters run at the end of each request, after
@@ -969,7 +978,7 @@ the 1.0 release:
  * The `:methodoverride' option to enable/disable the POST _method hack is
    obsolete; use `:method_override` instead.
 
-= 0.9.2 / 2009-05-18
+## 0.9.2 / 2009-05-18
 
  * This version is compatible with Rack 1.0. [Rein Henrichs]
 
@@ -1050,12 +1059,12 @@ the 1.0 release:
  * Fix in-file templates __END__ detection when __END__ exists with
    other stuff on a line [Yoji Shidara]
 
-= 0.9.1.1 / 2009-03-09
+## 0.9.1.1 / 2009-03-09
 
  * Fix directory traversal vulnerability in default static files
    route. See [#177] for more info.
 
-= 0.9.1 / 2009-03-01
+## 0.9.1 / 2009-03-01
 
  * Sinatra now runs under Ruby 1.9.1 [#61]
 
@@ -1125,7 +1134,7 @@ the 1.0 release:
  * Fixed that "." in route patterns erroneously matched any character
    instead of a literal ".". [#124]
 
-= 0.9.0.4 / 2009-01-25
+## 0.9.0.4 / 2009-01-25
 
  * Using halt with more than 1 args causes ArgumentError [#131]
  * using halt in a before filter doesn't modify response [#127]
@@ -1134,7 +1143,7 @@ the 1.0 release:
  * Preserve non-nested params in nested params hash [#117]
  * Fix backtrace dump with Rack::Lint [#116]
 
-= 0.9.0.3 / 2009-01-21
+## 0.9.0.3 / 2009-01-21
 
  * Fall back on mongrel then webrick when thin not found. [#75]
  * Use :environment instead of :env in test helpers to
@@ -1143,12 +1152,12 @@ the 1.0 release:
  * Fix app_file detection on windows [#118]
  * Fix static files with Rack::Lint in pipeline [#121]
 
-= 0.9.0.2 / 2009-01-18
+## 0.9.0.2 / 2009-01-18
 
  * Halting a before block should stop processing of routes [#85]
  * Fix redirect/halt in before filters [#85]
 
-= 0.9.0 / 2009-01-18
+## 0.9.0 / 2009-01-18
 
  * Works with and requires Rack >= 0.9.1
 
@@ -1241,7 +1250,7 @@ the 1.0 release:
    subclass of Sinatra::Base; each request is processed within an
    instance.
 
-= 0.3.3 / 2009-01-06
+## 0.3.3 / 2009-01-06
 
  * Pin to Rack 0.4.0 (this is the last release on Rack 0.4)
 
@@ -1254,12 +1263,12 @@ the 1.0 release:
  * BUG: raising Sinatra::NotFound resulted in a 500 response
    code instead of 404.
 
- * BUG: use_in_file_templates! fails with CR/LF (#45)
+ * BUG: use_in_file_templates! fails with CR/LF [#45]
 
  * BUG: Sinatra detects the app file and root path when run under
    thin/passenger.
 
-= 0.3.2
+## 0.3.2
 
  * BUG: Static and send_file read entire file into String before
    sending. Updated to stream with 8K chunks instead.
@@ -1269,11 +1278,11 @@ the 1.0 release:
 
  * Various minor doc fixes.
 
-= 0.3.1
+## 0.3.1
 
  * Unbreak optional path parameters [jeremyevans]
 
-= 0.3.0
+## 0.3.0
 
  * Add sinatra.gemspec w/ support for github gem builds. Forks can now
    enable the build gem option in github to get free username-sinatra.gem
@@ -1330,10 +1339,10 @@ the 1.0 release:
 
  * Fix for escaped paths not resolving static files [Matthew Walker]
 
-= 0.2.1
+## 0.2.1
 
  * File upload fix and minor tweaks.
 
-= 0.2.0
+## 0.2.0
 
  * Initial gem release of 0.2 codebase.

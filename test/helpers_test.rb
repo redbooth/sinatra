@@ -8,7 +8,7 @@ class HelpersTest < Minitest::Test
   end
 
   def status_app(code, &block)
-    code += 2 if [204, 205, 304].include? code
+    code += 2 if [204, 304].include? code
     block ||= proc { }
     mock_app do
       get('/') do
@@ -23,6 +23,23 @@ class HelpersTest < Minitest::Test
     it 'sets the response status code' do
       status_app 207
       assert_equal 207, response.status
+    end
+  end
+
+  describe 'bad_request?' do
+    it 'is true for status == 400' do
+      status_app(400) { bad_request? }
+      assert_body 'true'
+    end
+
+    it 'is false for status gt 400' do
+      status_app(401) { bad_request? }
+      assert_body 'false'
+    end
+
+    it 'is false for status lt 400' do
+      status_app(399) { bad_request? }
+      assert_body 'false'
     end
   end
 
@@ -424,7 +441,7 @@ class HelpersTest < Minitest::Test
 
       get '/'
       assert_equal 404, status
-      assert_equal nil, response.headers['X-Cascade']
+      assert_nil response.headers['X-Cascade']
     end
   end
 
@@ -862,6 +879,12 @@ class HelpersTest < Minitest::Test
       assert_equal 'inline; filename="file.txt"', response['Content-Disposition']
     end
 
+    it "does not raise an error when :disposition set to a frozen string" do
+      send_file_app :disposition => 'inline'.freeze
+      get '/file.txt'
+      assert_equal 'inline; filename="file.txt"', response['Content-Disposition']
+    end 
+    
     it "sets the Content-Disposition header when :filename provided" do
       send_file_app :filename => 'foo.txt'
       get '/file.txt'
@@ -1824,6 +1847,17 @@ class HelpersTest < Minitest::Test
       mock_app { get('/') { to }}
       get '/'
       assert_equal 'http://example.org/', body
+    end
+
+    it 'is case-insensitive' do
+      mock_app { get('/:foo') { uri params[:foo] }}
+      assert_equal get('HtTP://google.com').body, get('http://google.com').body
+    end
+
+    it 'generates relative link for invalid path' do
+      mock_app { get('/') { uri 'htt^p://google.com' }}
+      get '/'
+      assert_equal 'http://example.org/htt^p://google.com', body
     end
   end
 

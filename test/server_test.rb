@@ -53,4 +53,37 @@ class ServerTest < Minitest::Test
   it "falls back on the next server handler when not found" do
     @app.run! :server => %w[foo bar mock]
   end
+
+  it "initializes Rack middleware immediately on server run" do
+    class MyMiddleware
+      @@initialized = false
+      def initialize(app)
+        @@initialized = true
+      end
+      def self.initialized
+        @@initialized
+      end
+      def call(env)
+      end
+    end
+
+    @app.use MyMiddleware
+    assert_equal(MyMiddleware.initialized, false)
+    @app.run!
+    assert_equal(MyMiddleware.initialized, true)
+  end
+
+  describe "Quiet mode" do
+    it "sends data to stderr when server starts and stops" do
+      @app.run!
+      assert_match(/\=\= Sinatra/, $stderr.string)
+    end
+
+    context "when quiet mode is activated" do
+      it "does not generate Sinatra start and stop messages" do
+        @app.run! quiet: true
+        refute_match(/\=\= Sinatra/, $stderr.string)
+      end
+    end
+  end
 end

@@ -1,13 +1,12 @@
 require 'sinatra/base'
 require 'rbconfig'
 require 'open-uri'
-require 'net/http'
-require 'timeout'
+require 'sinatra/runner'
 
 module IntegrationHelper
-  class BaseServer
+  class BaseServer < Sinatra::Runner
     extend Enumerable
-    attr_accessor :server, :port, :pipe
+    attr_accessor :server, :port
     alias name server
 
     def self.all
@@ -39,58 +38,8 @@ module IntegrationHelper
       return unless installed?
       kill
       @log     = ""
-      @pipe    = IO.popen(command)
-      @started = Time.now
-      warn "#{server} up and running on port #{port}" if ping
+      super
       at_exit { kill }
-    end
-
-    def ping(timeout = 30)
-      loop do
-        return if alive?
-        if Time.now - @started > timeout
-          $stderr.puts command, log
-          fail "timeout"
-        else
-          sleep 0.1
-        end
-      end
-    end
-
-    def alive?
-      3.times { get('/ping') }
-      true
-    rescue Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError, SystemCallError, OpenURI::HTTPError, Timeout::Error
-      false
-    end
-
-    def get_stream(url = "/stream", &block)
-      Net::HTTP.start '127.0.0.1', port do |http|
-        request = Net::HTTP::Get.new url
-        http.request request do |response|
-          response.read_body(&block)
-        end
-      end
-    end
-
-    def get_response(url)
-      Net::HTTP.start '127.0.0.1', port do |http|
-        request = Net::HTTP::Get.new url
-        http.request request do |response|
-          response
-        end
-      end
-    end
-
-    def get(url)
-      Timeout.timeout(1) { open("http://127.0.0.1:#{port}#{url}").read }
-    end
-
-    def log
-      @log ||= ""
-      loop { @log <<  @pipe.read_nonblock(1) }
-    rescue Exception
-      @log
     end
 
     def installed?
@@ -105,7 +54,7 @@ module IntegrationHelper
 
     def command
       @command ||= begin
-        cmd = ["RACK_ENV=#{environment}", "exec"]
+        cmd = ["APP_ENV=#{environment}", "exec"]
         if RbConfig.respond_to? :ruby
           cmd << RbConfig.ruby.inspect
         else
@@ -120,14 +69,6 @@ module IntegrationHelper
       end
     end
 
-    def kill
-      return unless pipe
-      Process.kill("KILL", pipe.pid)
-    rescue NotImplementedError
-      system "kill -9 #{pipe.pid}"
-    rescue Errno::ESRCH
-    end
-
     def webrick?
       name.to_s == "webrick"
     end
@@ -138,6 +79,10 @@ module IntegrationHelper
 
     def puma?
       name.to_s == "puma"
+    end
+
+    def reel?
+      name.to_s == "reel"
     end
 
     def trinidad?
@@ -172,7 +117,7 @@ module IntegrationHelper
         # SINGLETHREAD means create a new runtime
         vm = org.jruby.embed.ScriptingContainer.new(org.jruby.embed.LocalContextScope::SINGLETHREAD)
         vm.load_paths = [File.expand_path('../../lib', __FILE__)]
-        vm.environment = ENV.merge('RACK_ENV' => environment.to_s)
+        vm.environment = ENV.merge('APP_ENV' => environment.to_s)
 
         # This ensures processing of RUBYOPT which activates Bundler
         vm.provider.ruby_instance_config.process_arguments []

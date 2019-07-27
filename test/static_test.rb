@@ -162,8 +162,7 @@ class StaticTest < Minitest::Test
         response.status,
         "Invalid range '#{http_range}' should be ignored"
       )
-      assert_equal(
-        nil,
+      assert_nil(
         response['Content-Range'],
         "Invalid range '#{http_range}' should be ignored"
       )
@@ -199,7 +198,7 @@ class StaticTest < Minitest::Test
   it 'sets cache control headers on static files if set' do
     @app.set :static_cache_control, :public
     env = Rack::MockRequest.env_for("/#{File.basename(__FILE__)}")
-    status, headers, body = @app.call(env)
+    _, headers, _ = @app.call(env)
     assert headers.has_key?('Cache-Control')
     assert_equal headers['Cache-Control'], 'public'
 
@@ -208,7 +207,7 @@ class StaticTest < Minitest::Test
       [:public, :must_revalidate, {:max_age => 300}]
     )
     env = Rack::MockRequest.env_for("/#{File.basename(__FILE__)}")
-    status, headers, body = @app.call(env)
+    _, headers, _ = @app.call(env)
     assert headers.has_key?('Cache-Control')
     assert_equal(
       headers['Cache-Control'],
@@ -238,9 +237,9 @@ class StaticTest < Minitest::Test
       set :static, true
       set :public_folder, File.join(File.dirname(__FILE__), 'public')
     end
-    
+
     get "/hello+world.txt"
-    
+
     real_path = File.join(File.dirname(__FILE__), 'public', 'hello+world.txt')
     assert ok?
     assert_equal File.read(real_path), body
@@ -253,9 +252,9 @@ class StaticTest < Minitest::Test
       set :static, true
       set :public_folder, File.join(File.dirname(__FILE__), 'public')
     end
-    
+
     get "/hello%2bworld.txt"
-    
+
     real_path = File.join(File.dirname(__FILE__), 'public', 'hello+world.txt')
     assert ok?
     assert_equal File.read(real_path), body

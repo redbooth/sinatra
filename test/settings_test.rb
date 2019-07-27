@@ -186,6 +186,12 @@ class SettingsTest < Minitest::Test
       @base.enable :methodoverride
       assert @base.methodoverride?
     end
+
+    it 'ignores bundler/inline from callers' do
+      @application.stub(:caller, ->(_){ ['/path/to/bundler/inline.rb', $0] }) do
+        assert_equal File.expand_path($0), File.expand_path(@application.send(:caller_files).first)
+      end
+    end
   end
 
   describe 'run' do
@@ -245,6 +251,22 @@ class SettingsTest < Minitest::Test
       assert_equal 500, status
       assert body.include?("StandardError")
       assert body.include?("<code>show_exceptions</code> setting")
+    end
+
+    it 'does not attempt to show unparseable query parameters' do
+      klass = Sinatra.new(Sinatra::Application)
+      mock_app(klass) {
+        enable :show_exceptions
+
+        get '/' do
+          raise Sinatra::BadRequest
+        end
+      }
+
+      get '/'
+      assert_equal 400, status
+      refute body.include?('<div id="get">')
+      refute body.include?('<div id="post">')
     end
 
     it 'does not override app-specified error handling when set to :after_handler' do
@@ -452,8 +474,8 @@ class SettingsTest < Minitest::Test
 
   describe 'root' do
     it 'is nil if app_file is not set' do
-      assert @base.root.nil?
-      assert @application.root.nil?
+      assert_nil @base.root
+      assert_nil @application.root
     end
 
     it 'is equal to the expanded basename of app_file' do
@@ -467,8 +489,8 @@ class SettingsTest < Minitest::Test
 
   describe 'views' do
     it 'is nil if root is not set' do
-      assert @base.views.nil?
-      assert @application.views.nil?
+      assert_nil @base.views
+      assert_nil @application.views
     end
 
     it 'is set to root joined with views/' do
@@ -482,8 +504,8 @@ class SettingsTest < Minitest::Test
 
   describe 'public_folder' do
     it 'is nil if root is not set' do
-      assert @base.public_folder.nil?
-      assert @application.public_folder.nil?
+      assert_nil @base.public_folder
+      assert_nil @application.public_folder
     end
 
     it 'is set to root joined with public/' do
@@ -561,6 +583,17 @@ class SettingsTest < Minitest::Test
     it 'sets up RemoteToken if sessions are enabled' do
       MiddlewareTracker.track do
         Sinatra.new { enable :sessions }.new
+        assert_include MiddlewareTracker.used, Rack::Protection::RemoteToken
+      end
+    end
+
+    it 'sets up RemoteToken if sessions are enabled with a custom session store' do
+      MiddlewareTracker.track do
+        Sinatra.new {
+          enable :sessions
+          set :session_store, Rack::Session::Pool
+        }.new
+        assert_include MiddlewareTracker.used, Rack::Session::Pool
         assert_include MiddlewareTracker.used, Rack::Protection::RemoteToken
       end
     end
