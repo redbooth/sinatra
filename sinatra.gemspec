@@ -23,33 +23,7 @@ Gem::Specification.new 'sinatra', version do |s|
   s.extra_rdoc_files  = s.files.select { |p| p =~ /^README/ } << 'LICENSE'
   s.rdoc_options      = %w[--line-numbers --inline-source --title Sinatra --main README.rdoc --encoding=UTF-8]
 
-  if s.respond_to?(:metadata)
-    s.metadata = {
-      'source_code_uri'   => 'https://github.com/sinatra/sinatra',
-      'changelog_uri'     => 'https://github.com/sinatra/sinatra/blob/master/CHANGELOG.md',
-      'homepage_uri'      => 'http://sinatrarb.com/',
-      'bug_tracker_uri'   => 'https://github.com/sinatra/sinatra/issues',
-      'mailing_list_uri'  => 'http://groups.google.com/group/sinatrarb',
-      'documentation_uri' => 'https://www.rubydoc.info/gems/sinatra'
-    }
-  else
-    msg = "RubyGems 2.0 or newer is required to protect against public "\
-          "gem pushes. You can update your rubygems version by running:\n\n"\
-          "gem install rubygems-update\n"\
-          "update_rubygems\n"\
-          "gem update --system"
-    raise <<-EOF
-RubyGems 2.0 or newer is required to protect against public gem pushes. You can update your rubygems version by running:
-  gem install rubygems-update
-  update_rubygems:
-  gem update --system
-EOF
-  end
-
-  s.required_ruby_version = '>= 2.2.0'
-
-  s.add_dependency 'rack', '~> 2.0'
-  s.add_dependency 'tilt', '~> 2.0'
-  s.add_dependency 'rack-protection', version
-  s.add_dependency 'mustermann', '~> 1.0'
+  s.add_dependency 'rack', '~> 1.6'
+  s.add_dependency 'tilt', '>= 1.3', '< 3'
+  s.add_dependency 'rack-protection', '~> 1.4'
 end
